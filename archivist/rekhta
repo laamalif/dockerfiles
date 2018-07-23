@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 from bs4 import BeautifulSoup
 from lxml import html
 from lxml.etree import tostring
 import re
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import json
 import requests
 from PIL import Image
@@ -13,19 +12,19 @@ import sys
 import os
 import ssl
 import uuid
-
+import random
 ssl._create_default_https_context = ssl._create_unverified_context
 
 sysArgLen = len(sys.argv)
 if not (sysArgLen >= 2 and sysArgLen <= 3):
-    print "fetch all pages"
-    print "\tUsage: python download.py http://bookUrl/"
-    print ""
-    print "fetch specific pages"
-    print "\tUsage: python download.py http://bookUrl/ 400-420"
-    print ""
-    print "fetch single page"
-    print "\tUsage: python download.py http://bookUrl/ 411"
+    print("download complete book")
+    print("\tUsage: python rekhta.py http://bookUrl/")
+    print("")
+    print("download page range")
+    print("\tUsage: python rekhta.py http://bookUrl/ 400-420")
+    print("")
+    print("download single page")
+    print("\tUsage: python rekhta.py http://bookUrl/ 411")
     sys.exit()
 
 bookUrl = sys.argv[1]
@@ -44,11 +43,28 @@ if sysArgLen == 3:
     else:
         pagesParam = int(pagesParam) - 1
 
-print "URL {}".format(bookUrl)
-print "fetching details...."
+print("URL {}".format(bookUrl))
+print("Fetching details....")
 
-response = urllib2.urlopen(bookUrl)
+user_agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'
+request = urllib.request.Request(bookUrl,headers={'User-Agent': user_agent})
+response = urllib.request.urlopen(request)
 htmlx = response.read()
+
+user_agents = [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0',
+    'Mozilla/5.0 (Wayland; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 11_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (Linux; Android 8.0.0; SM-G950F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 8.1.0; ONEPLUS A5010 Build/OPM1.171019.011) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.107 Mobile Safari/537.36',
+    'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+    'Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Focus/6.0 Chrome/67.0.3396.87 Mobile Safari/537.36'
+]
 
 soup = BeautifulSoup(htmlx, "html.parser")
 title = soup.h5.string
@@ -56,8 +72,10 @@ volume = soup.h6.string
 mktemp = uuid.uuid4().hex
 os.makedirs(mktemp)
 os.chdir(mktemp)
+user_agent = random.choice(user_agents)
+headers = {'User-Agent': user_agent}
 
-h = requests.get(bookUrl).content
+h = requests.get(bookUrl, headers=headers).content
 tree = html.fromstring(h)
 
 bookData = []
@@ -80,32 +98,37 @@ author = bookData[0]['AUTHOR']
 year = bookData[0]['YEAR']
 publisher = bookData[0]['PUBLISHER']
 
+
 if volume == None:
     name = ("%s") % (title)
 else:
     name = ("%s - %s") % (title, volume)
 
-name = re.sub("،", "-", name)
+name = re.sub("ØŒ", "-", name)
 
-print("Name: "+'\033[92m' + "%s" + '\033[0m') % (name)
-print("Author: "+'\033[93m' + "%s" + '\033[0m') % (author)
-print("Year: "+'\033[95m' + "%s" + '\033[0m') % (year)
-print("Publisher: "+'\033[94m' + "%s" + '\033[0m') % (publisher)
+
+print(("Name: "+'\033[92m' + "%s" + '\033[0m') % (name))
+print(("Author: "+'\033[93m' + "%s" + '\033[0m') % (author))
+print(("Year: "+'\033[95m' + "%s" + '\033[0m') % (year))
+print(("Publisher: "+'\033[94m' + "%s" + '\033[0m') % (publisher))
 
 scriptText = soup.find(text=re.compile("pages"))
 
 pages = re.findall("[0-9]+.jpg", scriptText)
 workingPages = pages
-print "Pages: \033[94m{}\n\033[0m".format(len(pages))
+print("Pages: \033[94m{}\n\033[0m".format(len(pages)))
+#print "Pages: {}\n".format(len(pages))
+# for single page
+
 
 if pagesParam != -1 and "-" not in str(pagesParam):
     workingPages = [pages[pagesParam]]
-    print "Processing {}".format(pagesParam + 1)
+    print("Processing {}".format(pagesParam + 1))
 
 # for range
 if startRange != -1 and endRange != -1:
     workingPages = pages[startRange:endRange]
-    print "Processing {}-{}".format(startRange + 1, endRange)
+    print("Processing {}-{}".format(startRange + 1, endRange))
 
 bookIdText = re.findall("bookId.*", scriptText)[0]
 bookId = re.findall("[0-9a-zA-Z]{8}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{12}", bookIdText)[0]
@@ -113,20 +136,20 @@ pageIds = re.findall("[0-9a-zA-Z]{8}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4
 
 for page in workingPages:
     pageIndex = pages.index(page)
-    dataUrl = "https://rbookscdn2.azureedge.net/api_getebookpagebyid/?pageid=" + pageIds[pageIndex]
-    rr = urllib2.urlopen(dataUrl)
+    dataUrl = "https://rbookscdn.azureedge.net/api_getebookpagebyid/?pageid=" + pageIds[pageIndex]
+    rr = urllib.request.urlopen(dataUrl)
     html2 = rr.read()
     data = json.loads(html2)
-    print "fetching {} file".format(page)
+    print("Downloading {} file".format(page))
     f = open(page, "wb")
-    f.write(requests.get("https://rbookscdn2.azureedge.net/api_getebookpageimage?ebookid={}&pageid={}".format(bookId, page)).content)
+    f.write(requests.get("https://rbookscdn.azureedge.net/api_getebookpageimage?ebookid={}&pageid={}".format(bookId, page, headers=headers)).content)
     f.close()
-    print "processing {} file".format(page)
+    print("Processing {} file".format(page))
     mainImg = Image.open(page)
     im = Image.new("RGB", (data["PageWidth"],data["PageHeight"]), "white")
     looptimes = data["X"] * data["Y"]
     s = 56
-    looptimesRange = range(0, looptimes)
+    looptimesRange = list(range(0, looptimes))
     for x in looptimesRange:
         # data.Sub[i].X1 * (s + 16), data.Sub[i].Y1 * (s + 16), s, s, data.Sub[i].X2 * m, data.Sub[i].Y2 * m, m, m)
         cropX = data["Sub"][x]["X1"] * 66
@@ -143,17 +166,17 @@ for page in workingPages:
     if os.path.isfile(page):
         os.remove(page)
 
-    print "saved output filename {}".format(outputFileName)
-    print ""
+    print("Saved output filename {}".format(outputFileName))
 
-print("Generting PDF: "+'\033[91m' + "%s.pdf" + '\033[0m') % (name)
+    print("")
 
+print(("Generting PDF: "+'\033[91m' + "%s.pdf" + '\033[0m') % (name))
 if os.path.isfile('../%s.pdf' % name) == True:
     s = name.replace(" ", "_")
     os.system('img2pdf *.jpg --output "%s".pdf' % s)
 else:
     os.system('img2pdf *.jpg --output "%s".pdf' % name)
 
-#os.system('exiftool -Title="%s" -Author="%s" -xmp-dc:Publisher="%s" -Copyright="%s" *.pdf' % (title, author, publisher, year))
+os.system('exiftool -Title="%s" -Author="%s" -xmp-dc:Publisher="%s" -Copyright="%s" *.pdf' % (title, author, publisher, year))
 os.system("mv *.pdf ../")
 os.system('rm -fr ../%s' % mktemp)
