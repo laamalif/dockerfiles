@@ -138,13 +138,13 @@ pageIds = re.findall("[0-9a-zA-Z]{8}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4
 
 for page in workingPages:
     pageIndex = pages.index(page)
-    dataUrl = "https://rbookscdn.azureedge.net/api_getebookpagebyid/?pageid=" + pageIds[pageIndex]
+    dataUrl = "https://rbookscdn2.azureedge.net/api_getebookpagebyid/?pageid=" + pageIds[pageIndex]
     rr = urllib.request.urlopen(dataUrl)
     html2 = rr.read()
     data = json.loads(html2)
     print("Downloading {} file".format(page))
     f = open(page, "wb")
-    f.write(requests.get("https://rbookscdn.azureedge.net/api_getebookpageimage?ebookid={}&pageid={}".format(bookId, page, headers=headers)).content)
+    f.write(requests.get("https://rbookscdn2.azureedge.net/api_getebookpageimage?ebookid={}&pageid={}".format(bookId, page, headers=headers)).content)
     f.close()
     print("Processing {} file".format(page))
     mainImg = Image.open(page)
