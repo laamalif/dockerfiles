@@ -4,7 +4,9 @@ from bs4 import BeautifulSoup
 from lxml import html
 from lxml.etree import tostring
 import re
-import urllib.request, urllib.error, urllib.parse
+from urllib.request import Request, urlopen
+import urllib.error, urllib.parse
+#import urllib.request, urllib.error, urllib.parse
 import json
 import requests
 from PIL import Image
@@ -13,6 +15,9 @@ import os
 import ssl
 import uuid
 import random
+import time
+from requests.adapters import HTTPAdapter
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 sysArgLen = len(sys.argv)
@@ -52,18 +57,17 @@ response = urllib.request.urlopen(request)
 htmlx = response.read()
 
 user_agents = [
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:65.0) Gecko/20100101 Firefox/65.0',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15',
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 12_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/14.0b12646 Mobile/16C101 Safari/605.1.15',
-    'Mozilla/5.0 (Linux; Android 8.1.0; ONEPLUS A5010 Build/OPM1.171019.011) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Mobile Safari/537.36',
-    'Mozilla/5.0 (Linux; Android 9; Pixel 3 XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.105 Mobile Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (Linux; Android 9; Pixel 2 XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.80 Mobile Safari/537.36',
-    'Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Focus/6.0 Chrome/67.0.3396.87 Mobile Safari/537.36'
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; rv:96.0) Gecko/20100101 Firefox/96.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/97.0.4692.84 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 15_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/40.2  Mobile/15E148 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.98 Safari/537.36 Edg/97.0.4692.98',
+    'Mozilla/5.0 (Linux; Android 10; MAR-LX1A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.98 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 11; LE2110) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.87 Mobile Safari/537.36'
 ]
 
 soup = BeautifulSoup(htmlx, "html.parser")
@@ -78,25 +82,26 @@ headers = {'User-Agent': user_agent}
 h = requests.get(bookUrl, headers=headers).content
 tree = html.fromstring(h)
 
-bookData = []
+#bookData = []
 
-for x in tree.xpath('//div[@class="B-descript"]'):
-    title = x.xpath('h5/text()')[0]
-    bookD = {'TITLE': title, 'PUBLISHER': '', 'AUTHOR': '', 'YEAR': ''}
+#for x in tree.xpath('//div[@class="B-descript"]'):
+#    title = x.xpath('h5/text()')[0]
+#    bookD = {'TITLE': title, 'PUBLISHER': '', 'AUTHOR': '', 'YEAR': ''}
 
-    for u in x.xpath('ul/li/p'):
-        if u.text.strip() == 'PUBLISHER':
-            bookD['PUBLISHER'] = u.xpath('span')[0].text.strip()
-        elif u.text.strip() == 'YEAR':
-            bookD['YEAR'] = u.xpath('span')[0].text.strip()
-        elif u.text.strip() == 'AUTHOR':
-            bookD['AUTHOR'] = tostring(u.xpath('span/a')[0], method="text")
+#    for u in x.xpath('ul/li/p'):
+#        if u.text.strip() == 'PUBLISHER':
+#            bookD['PUBLISHER'] = u.xpath('span')[0].text.strip()
+#        elif u.text.strip() == 'YEAR':
+#            bookD['YEAR'] = u.xpath('span')[0].text.strip()
+#        elif u.text.strip() == 'AUTHOR':
+#            bookD['AUTHOR'] = tostring(u.xpath('span/a')[0], method="text")
+#
+#    bookData.append(bookD)
 
-    bookData.append(bookD)
+#author = bookData[0]['AUTHOR']
+#year = bookData[0]['YEAR']
+#publisher = bookData[0]['PUBLISHER']
 
-author = bookData[0]['AUTHOR']
-year = bookData[0]['YEAR']
-publisher = bookData[0]['PUBLISHER']
 
 if volume == None:
     name = ("%s") % (title)
@@ -105,18 +110,22 @@ else:
 
 name = re.sub("ØŒ", "-", name)
 
-print(("Name: "+'\033[92m' + "%s" + '\033[0m') % (name))
-print(("Author: "+'\033[93m' + "%s" + '\033[0m') % (author))
-print(("Year: "+'\033[95m' + "%s" + '\033[0m') % (year))
-print(("Publisher: "+'\033[94m' + "%s" + '\033[0m') % (publisher))
+
+#print(("Name: "+'\033[92m' + "%s" + '\033[0m') % (name))
+#print(("Author: "+'\033[93m' + "%s" + '\033[0m') % (author))
+#print(("Year: "+'\033[95m' + "%s" + '\033[0m') % (year))
+#print(("Publisher: "+'\033[94m' + "%s" + '\033[0m') % (publisher))
 
 scriptText = soup.find(text=re.compile("pages"))
+authtext = soup.find(text=re.compile("authkey"))
 
 pages = re.findall("[0-9]+.jpg", scriptText)
 workingPages = pages
 print("Pages: \033[94m{}\n\033[0m".format(len(pages)))
-
+#print "Pages: {}\n".format(len(pages))
 # for single page
+
+
 if pagesParam != -1 and "-" not in str(pagesParam):
     workingPages = [pages[pagesParam]]
     print("Processing {}".format(pagesParam + 1))
@@ -126,20 +135,38 @@ if startRange != -1 and endRange != -1:
     workingPages = pages[startRange:endRange]
     print("Processing {}-{}".format(startRange + 1, endRange))
 
+authkeyfull= re.findall("authkey.*cidx", authtext)[0]
+authkeyfull = authkeyfull.replace("authkey=", "")
+authkeyfull = authkeyfull.replace("&cidx", "")
+keyslistA=authkeyfull.split("&bkid=")
+authkeyTxt=keyslistA[0]
+bkidTxt=keyslistA[1]
+
 bookIdText = re.findall("bookId.*", scriptText)[0]
 bookId = re.findall("[0-9a-zA-Z]{8}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{12}", bookIdText)[0]
 pageIds = re.findall("[0-9a-zA-Z]{8}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{12}", scriptText)
 
 for page in workingPages:
     pageIndex = pages.index(page)
-    dataUrl = "https://rekhtabookscdn.azureedge.net/api_getebookpagebyid/?pageid=" + pageIds[pageIndex]
-    rr = urllib.request.urlopen(dataUrl)
-    html2 = rr.read()
+    #dataUrl = "https://rekhtabookscdn.azureedge.net/api_getebookpagebyid/?pageid=" + pageIds[pageIndex]
+    #dataUrl = "https://ebooksapi.rekhta.org/api_getebookpagebyid/?pageid=" + pageIds[pageIndex]
+    #dataUrl = "https://ebooksapi.rekhta.org/api_getebookpagebyid/?atky=pns&pgi=" + pageIds[pageIndex]
+    dataUrl = "https://ebooksapi.rekhta.org/api_getebookpagebyid/?authkey="+authkeyTxt+"&bkid="+bkidTxt+"&cidx=1&pgid=" + pageIds[pageIndex]
+    print(dataUrl)
+
+    req = urllib.request.Request(dataUrl, headers={'Referer': 'https://www.rekhta.org/'})
+    html2 = urllib.request.urlopen(req).read()
+    print(html2)
+    #rr = urllib.request.urlopen(dataUrl)
+    #html2 = rr.read()
     data = json.loads(html2)
     print("Downloading {} file".format(page))
     f = open(page, "wb")
-    f.write(requests.get("https://rekhtabookscdn.azureedge.net/api_getebookpageimage?ebookid={}&pageid={}".format(bookId, page, headers=headers)).content)
+    #f.write(requests.get("https://rekhtabookscdn.azureedge.net/api_getebookpageimage?ebookid={}&pageid={}".format(bookId, page, headers=headers)).content)
+    #f.write(requests.get("https://alt-ebooksapi.rekhta.org/images/{}/{}".format(bookId, page, headers=headers)).content)
+    f.write(requests.get("https://ebooksapi.rekhta.org/images/{}/{}".format(bookId, page, headers=headers)).content)
     f.close()
+    print (headers)
     print("Processing {} file".format(page))
     mainImg = Image.open(page)
     im = Image.new("RGB", (data["PageWidth"],data["PageHeight"]), "white")
@@ -173,6 +200,6 @@ if os.path.isfile('../%s.pdf' % name) == True:
 else:
     os.system('img2pdf *.jpg --output "%s".pdf' % name)
 
-os.system('exiftool -Title="%s" -Author="%s" -xmp-dc:Publisher="%s" -Copyright="%s" *.pdf' % (title, author, publisher, year))
+#os.system('exiftool -Title="%s" -Author="%s" -xmp-dc:Publisher="%s" -Copyright="%s" *.pdf' % (title, author, publisher, year))
 os.system("mv *.pdf ../")
 os.system('rm -fr ../%s' % mktemp)
